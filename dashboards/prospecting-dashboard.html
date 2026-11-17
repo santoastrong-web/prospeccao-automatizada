@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard — Castro telecom</title>
+<style>
+:root{--bg:#0a0a0f;--bg2:#111118;--bg3:#18181f;--border:#2a2a38;--accent:#8b5cf6;--accent2:#a855f7;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--text:#e2e8f0;--muted:#64748b;--card:#13131a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;padding:24px}
+h1{font-size:20px;font-weight:800;color:white;margin-bottom:4px}
+.sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;border-top:3px solid var(--accent)}
+.card.green{border-top-color:var(--green)}.card.yellow{border-top-color:var(--yellow)}
+.clabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.cval{font-size:28px;font-weight:800;color:white;margin:6px 0 2px}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+th{background:var(--bg3);padding:12px 16px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+td{padding:12px 16px;font-size:13px;border-top:1px solid var(--border)}
+.seg{background:rgba(139,92,246,.15);color:#c4b5fd;padding:2px 8px;border-radius:12px;font-size:11px}
+select.status-select{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
+.temp-quente{background:rgba(16,185,129,.15);color:#6ee7b7;padding:2px 8px;border-radius:12px;font-size:11px}
+.temp-morno{background:rgba(245,158,11,.15);color:#fcd34d;padding:2px 8px;border-radius:12px;font-size:11px}
+.temp-frio{background:rgba(100,116,139,.15);color:#94a3b8;padding:2px 8px;border-radius:12px;font-size:11px}
+.score{font-weight:700}.score.high{color:#6ee7b7}.score.mid{color:#fcd34d}.score.low{color:#f87171}
+.step-badge{background:rgba(139,92,246,.2);color:#c4b5fd;padding:2px 8px;border-radius:8px;font-size:11px}
+.loading{text-align:center;padding:40px;color:var(--muted)}
+.refresh-btn{background:var(--accent);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:12px;cursor:pointer;margin-bottom:16px}
+.refresh-btn:hover{background:var(--accent2)}
+.refresh-btn:disabled{opacity:0.5;cursor:not-allowed}
+.stats-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.stat-badge{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:12px}
+.stat-badge .label{color:var(--muted);font-size:10px;text-transform:uppercase}
+.stat-badge .value{font-weight:700;font-size:16px;color:white}
+.filters{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-select{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px}
+.checkbox-label{display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;color:var(--text)}
+.checkbox-label input{width:16px;height:16px;accent-color:var(--accent)}
+.notes-input{width:100%;min-width:150px;max-width:300px;min-height:36px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;font-family:inherit;resize:vertical}
+</style>
+</head>
+<body>
+<h1>Painel de Prospeccao — Castro telecom</h1>
+<p class="sub" id="subtitle">Carregando...</p>
+
+<div class="filters">
+  <select class="filter-select" id="filter-segment" onchange="applyFilters()">
+    <option value="">Todos os segmentos</option>
+  </select>
+  <select class="filter-select" id="filter-temperature" onchange="applyFilters()">
+    <option value="">Todas as temperaturas</option>
+    <option value="quente">Quente</option>
+    <option value="morno">Morno</option>
+    <option value="frio">Frio</option>
+  </select>
+  <select class="filter-select" id="filter-status" onchange="applyFilters()">
+    <option value="">Todos os status</option>
+    <option value="novo">Novo</option>
+    <option value="em_sequencia">Em Sequência</option>
+    <option value="respondeu">Respondeu</option>
+    <option value="sequencia_concluida">Sequência Concluída</option>
+  </select>
+  <label class="checkbox-label">
+    <input type="checkbox" id="show-full-phone" onchange="togglePhoneMask()" checked>
+    <span>Mostrar telefone completo</span>
+  </label>
+  <button class="refresh-btn" id="refresh-btn" onclick="loadLeads()">🔄 Atualizar Agora</button>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="clabel">Total</div><div class="cval" id="c-total">-</div></div>
+  <div class="card green"><div class="clabel">Quentes</div><div class="cval" id="c-quente">-</div></div>
+  <div class="card yellow"><div class="clabel">Mornos</div><div class="cval" id="c-morno">-</div></div>
+  <div class="card"><div class="clabel">Frios</div><div class="cval" id="c-frio">-</div></div>
+  <div class="card"><div class="clabel">Em Sequência</div><div class="cval" id="c-seq">-</div></div>
+  <div class="card green"><div class="clabel">Responderam</div><div class="cval" id="c-resp">-</div></div>
+</div>
+
+<div class="stats-row" id="stats-row" style="display:none;">
+  <div class="stat-badge"><div class="label">Score Médio</div><div class="value" id="s-avg">-</div></div>
+  <div class="stat-badge"><div class="label">Filtrados</div><div class="value" id="s-filtered">-</div></div>
+  <div class="stat-badge"><div class="label">Fonte</div><div class="value" id="s-source">vercel</div></div>
+  <div class="stat-badge"><div class="label">Atualizado</div><div class="value" id="s-time">-</div></div>
+</div>
+
+<table id="leads-table">
+  <thead><tr>
+    <th>#</th><th>Nome</th><th>Segmento</th><th>Telefone</th><th>Email</th>
+    <th>Score</th><th>Temperatura</th><th>Potencial</th><th>Step</th><th>Data</th><th>Status</th><th>Notas</th>
+  </tr></thead>
+  <tbody id="leads-tbody"></tbody>
+</table>
+
+<script>
+// ========== CONFIG ==========
+const STATUS_KEY = 'prospecting_status_v2';
+const NOTES_KEY = 'prospecting_notes_v2';
+const STATUS_OPTIONS = ['Novo','Em Sequencia','Respondeu','Sem Interesse','Convertido'];
+const AUTO_REFRESH_MS = 5 * 60 * 1000;
+
+// ========== STATE ==========
+let allLeads = [];
+let filteredLeads = [];
+let currentFilters = { segment: '', temperature: '', status: '' };
+let showFullPhone = true;
+
+// ========== UTILS ==========
+function maskPhone(p) {
+  if (!p) return '-';
+  const s = String(p);
+  if (showFullPhone) return s;
+  return s.length >= 10 ? s.slice(0,4) + '***' + s.slice(-3) : s;
+}
+function scoreClass(s) { return s >= 7 ? 'high' : s >= 4 ? 'mid' : 'low'; }
+function tempBadge(t) {
+  const v = (t || '').toLowerCase();
+  if (v === 'quente') return '<span class="temp-quente">Quente</span>';
+  if (v === 'morno') return '<span class="temp-morno">Morno</span>';
+  return '<span class="temp-frio">Frio</span>';
+}
+function loadStatuses() {
+  try { return JSON.parse(localStorage.getItem(STATUS_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function saveStatus(id, value) {
+  const all = loadStatuses();
+  all[id] = value;
+  localStorage.setItem(STATUS_KEY, JSON.stringify(all));
+}
+function loadNotes() {
+  try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function saveNotes(id, value) {
+  const all = loadNotes();
+  all[id] = value;
+  localStorage.setItem(NOTES_KEY, JSON.stringify(all));
+}
+function formatDate(iso) {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return iso; }
+}
+function formatShortDate(iso) {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch { return iso; }
+}
+function togglePhoneMask() {
+  showFullPhone = document.getElementById('show-full-phone').checked;
+  renderTable();
+}
+
+// ========== FILTERS ==========
+function populateSegmentFilter() {
+  const segments = [...new Set(allLeads.map(l => l.segment).filter(Boolean))].sort();
+  const sel = document.getElementById('filter-segment');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todos os segmentos</option>' +
+    segments.map(s => `<option value="${s}">${s}</option>`).join('');
+  sel.value = current;
+}
+
+function applyFilters() {
+  currentFilters.segment = document.getElementById('filter-segment').value;
+  currentFilters.temperature = document.getElementById('filter-temperature').value;
+  currentFilters.status = document.getElementById('filter-status').value;
+
+  filteredLeads = allLeads.filter(lead => {
+    if (currentFilters.segment && lead.segment !== currentFilters.segment) return false;
+    if (currentFilters.temperature && lead.temperature !== currentFilters.temperature) return false;
+    if (currentFilters.status && lead.status !== currentFilters.status) return false;
+    return true;
+  });
+
+  document.getElementById('s-filtered').textContent = filteredLeads.length;
+  renderTable();
+}
+
+// ========== RENDER ==========
+function renderTable() {
+  const statuses = loadStatuses();
+  const savedNotesMap = loadNotes();
+  const tbody = document.getElementById('leads-tbody');
+
+  const sorted = [...filteredLeads].sort((a, b) =>
+    (b.score || 0) - (a.score || 0) || (a.current_step || 0) - (b.current_step || 0)
+  );
+
+  if (sorted.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" class="loading">Nenhum lead com os filtros atuais</td></tr>';
+    return;
+  }
+
+  let totals = { quente: 0, morno: 0, frio: 0, seq: 0, resp: 0 };
+
+  tbody.innerHTML = sorted.map((lead, idx) => {
+    const id = lead.phone || lead.id || idx;
+    const cur = statuses[id] || lead.status || 'Novo';
+    if (cur === 'Em Sequencia') totals.seq++;
+    if (cur === 'Respondeu') totals.resp++;
+    const t = (lead.temperature || '').toLowerCase();
+    if (t === 'quente') totals.quente++;
+    else if (t === 'morno') totals.morno++;
+    else totals.frio++;
+
+    const step = lead.current_step || 0;
+    const opts = STATUS_OPTIONS.map(o =>
+      `<option value="${o}"${o === cur ? ' selected' : ''}>${o}</option>`
+    ).join('');
+
+    const savedNotes = savedNotesMap[id] || lead.notes || '';
+
+    return `<tr>
+      <td>${idx + 1}</td>
+      <td style="font-weight:600">${lead.business_name || '-'}</td>
+      <td><span class="seg">${lead.segment || '-'}</span></td>
+      <td>${maskPhone(lead.phone)}</td>
+      <td style="color:var(--muted)">${lead.email || '-'}</td>
+      <td><span class="score ${scoreClass(lead.score || 0)}">${lead.score || 0}</span></td>
+      <td>${tempBadge(lead.temperature)}</td>
+      <td style="color:var(--muted);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${lead.potential || ''}">${lead.potential || '-'}</td>
+      <td><span class="step-badge">${step}/7</span></td>
+      <td style="color:var(--muted);font-size:12px;white-space:nowrap">${formatShortDate(lead.created_at)}</td>
+      <td><select class="status-select" onchange="saveStatus('${id}', this.value)">${opts}</select></td>
+      <td><textarea class="notes-input" onchange="saveNotes('${id}', this.value)" placeholder="Notas...">${savedNotes}</textarea></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('c-total').textContent = allLeads.length;
+  document.getElementById('c-quente').textContent = totals.quente;
+  document.getElementById('c-morno').textContent = totals.morno;
+  document.getElementById('c-frio').textContent = totals.frio;
+  document.getElementById('c-seq').textContent = totals.seq;
+  document.getElementById('c-resp').textContent = totals.resp;
+}
+
+// ========== LOAD LEADS ==========
+async function loadLeads() {
+  try {
+    document.getElementById('leads-tbody').innerHTML = '<tr><td colspan="11" class="loading">Carregando leads...</td></tr>';
+
+    const resp = await fetch('/leads.json');
+    if (!resp.ok) throw new Error('Falha ao carregar leads.json');
+
+    allLeads = await resp.json();
+    populateSegmentFilter();
+    applyFilters();
+
+    document.getElementById('subtitle').textContent = `Atualizado em ${formatDate(new Date().toISOString())} — ${allLeads.length} leads`;
+    document.getElementById('s-time').textContent = formatDate(new Date().toISOString());
+    document.getElementById('stats-row').style.display = 'flex';
+  } catch (err) {
+    console.error('Erro ao carregar leads:', err);
+    document.getElementById('leads-tbody').innerHTML = '<tr><td colspan="11" class="loading">Erro ao carregar: ' + err.message + '</td></tr>';
+    document.getElementById('subtitle').textContent = 'Erro ao carregar leads';
+  }
+}
+
+// ========== INIT ==========
+document.addEventListener('DOMContentLoaded', loadLeads);
+
+// Auto-refresh
+setInterval(() => location.reload(), AUTO_REFRESH_MS);
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+# Vercel
+.vercel
+*.tsbuildinfo
+
+# Dependencies
+node_modules
+
+# Local DB (não commitar)
+*.db
+*.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.production.local
