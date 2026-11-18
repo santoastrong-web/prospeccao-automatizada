@@ -1,0 +1,12 @@
+{
+  "name": "prospeccao-dashboard",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "sync-leads": "node scripts/sync-leads.js"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.7",
+    "sqlite": "^5.1.1"
+  }
+}
