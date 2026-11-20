@@ -1,19 +1,10 @@
 {
   "version": 2,
   "name": "prospeccao-dashboard",
-  "framework": "static",
   "buildCommand": "",
   "devCommand": "",
   "installCommand": "",
   "outputDirectory": ".",
-  "routes": [
-    {
-      "src": "/leads.json",
-      "dest": "/leads.json"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/prospecting-dashboard.html"
-    }
-  ]
+  "cleanUrls": true,
+  "trailingSlash": false
 }
